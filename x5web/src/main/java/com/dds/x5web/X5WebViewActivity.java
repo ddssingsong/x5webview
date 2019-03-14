@@ -43,11 +43,21 @@ public class X5WebViewActivity extends AppCompatActivity {
     private ValueCallback<Uri> uploadFile;
     private URL mIntentUrl;
     private String title = "";
+    private boolean isShare;
+    private boolean isToolbar;
 
 
     public static void openActivity(Activity activity, String url) {
+        openActivity(activity, url, false, true);
+    }
+
+
+    // isShare 是否显示分享按钮  isToolBar 是否显示toolbar
+    public static void openActivity(Activity activity, String url, boolean isShare, boolean isToolbar) {
         Intent intent = new Intent(activity, X5WebViewActivity.class);
         intent.setData(Uri.parse(url));
+        intent.putExtra("isShare", isShare);
+        intent.putExtra("isToolbar", isToolbar);
         activity.startActivity(intent);
     }
 
@@ -67,6 +77,7 @@ public class X5WebViewActivity extends AppCompatActivity {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+            isShare = intent.getBooleanExtra("isShare", false);
         }
         //設置硬件加速模式
         try {
@@ -83,9 +94,15 @@ public class X5WebViewActivity extends AppCompatActivity {
         mViewParent = findViewById(R.id.webView1);
         mTestHandler.sendEmptyMessageDelayed(MSG_INIT_UI, 10);
 
+
         Toolbar toolbar = findViewById(R.id.toolbar);
         TextView textView = findViewById(R.id.btn_toolbar);
-        textView.setBackgroundResource(R.drawable.x5_ic_share_black_24dp);
+        if (isShare) {
+            textView.setBackgroundResource(R.drawable.x5_ic_share_black_24dp);
+        }
+        if (!isToolbar) {
+            toolbar.setVisibility(View.GONE);
+        }
         setSupportActionBar(toolbar);
         toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
