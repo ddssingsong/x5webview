@@ -1,9 +1,9 @@
 <resources>
 
     <style name="X5.AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
-        <item name="colorPrimary">#1b82d2</item>
-        <item name="colorPrimaryDark">#1b82d2</item>
-        <item name="colorAccent">#FF8686</item>
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
     </style>
 
     <style name="X5.AppTheme.NoActionBar" parent="X5.AppTheme">
@@ -12,5 +12,11 @@
         <item name="android:windowIsTranslucent">true</item>
     </style>
 
-
+    <style name="X5.AppTheme.NoActionBar_Black" parent="X5.AppTheme">
+        <item name="colorPrimary">#000000</item>
+        <item name="colorPrimaryDark">#000000</item>
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowIsTranslucent">true</item>
+    </style>
 </resources>

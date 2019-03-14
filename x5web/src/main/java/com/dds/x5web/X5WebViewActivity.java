@@ -78,6 +78,7 @@ public class X5WebViewActivity extends AppCompatActivity {
                 e.printStackTrace();
             }
             isShare = intent.getBooleanExtra("isShare", false);
+            isToolbar = intent.getBooleanExtra("isToolbar", false);
         }
         //設置硬件加速模式
         try {
@@ -90,6 +91,9 @@ public class X5WebViewActivity extends AppCompatActivity {
             e.printStackTrace();
         }
 
+        if (!isToolbar) {
+            setTheme(R.style.X5_AppTheme_NoActionBar_Black);
+        }
         setContentView(R.layout.activity_x5_web_view);
         mViewParent = findViewById(R.id.webView1);
         mTestHandler.sendEmptyMessageDelayed(MSG_INIT_UI, 10);
