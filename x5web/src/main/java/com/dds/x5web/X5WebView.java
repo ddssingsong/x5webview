@@ -1,14 +1,32 @@
 package com.dds.x5web;
 
 import android.content.Context;
+import android.support.v4.view.MotionEventCompat;
+import android.support.v4.view.NestedScrollingChild;
+import android.support.v4.view.NestedScrollingChildHelper;
+import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
 
 import com.tencent.smtt.sdk.WebSettings;
 import com.tencent.smtt.sdk.WebSettings.LayoutAlgorithm;
 import com.tencent.smtt.sdk.WebView;
 import com.tencent.smtt.sdk.WebViewClient;
 
-public class X5WebView extends WebView {
+public class X5WebView extends WebView implements NestedScrollingChild {
+
+    private int mLastMotionY;
+    private final int[] mScrollOffset = new int[2];
+    private final int[] mScrollConsumed = new int[2];
+    private int mNestedYOffset;
+
+    private NestedScrollingChildHelper mChildHelper;
+
+    public X5WebView(Context arg0) {
+        super(arg0);
+        setBackgroundColor(85621);
+        init();
+    }
 
     public X5WebView(Context arg0, AttributeSet arg1) {
         super(arg0, arg1);
@@ -19,10 +37,9 @@ public class X5WebView extends WebView {
             }
         };
         this.setWebViewClient(client);
-        // this.setWebChromeClient(chromeClient);
-        // WebStorage webStorage = WebStorage.getInstance();
         initWebViewSettings();
         this.getView().setClickable(true);
+        init();
     }
 
     private void initWebViewSettings() {
@@ -50,34 +67,115 @@ public class X5WebView extends WebView {
         // settings 的设计
     }
 
-//    @Override
-//    protected boolean drawChild(Canvas canvas, View child, long drawingTime) {
-//        boolean ret = super.drawChild(canvas, child, drawingTime);
-//        canvas.save();
-//        Paint paint = new Paint();
-//        paint.setColor(0x7fff0000);
-//        paint.setTextSize(24.f);
-//        paint.setAntiAlias(true);
-//        if (getX5WebViewExtension() != null) {
-//            canvas.drawText(this.getContext().getPackageName() + "-pid:"
-//                    + android.os.Process.myPid(), 10, 50, paint);
-//            canvas.drawText(
-//                    "X5  Core:" + QbSdk.getTbsVersion(this.getContext()), 10,
-//                    100, paint);
-//        } else {
-//            canvas.drawText(this.getContext().getPackageName() + "-pid:"
-//                    + android.os.Process.myPid(), 10, 50, paint);
-//            canvas.drawText("Sys Core", 10, 100, paint);
-//        }
-//        canvas.drawText(Build.MANUFACTURER, 10, 150, paint);
-//        canvas.drawText(Build.MODEL, 10, 200, paint);
-//        canvas.restore();
-//        return ret;
-//    }
 
-    public X5WebView(Context arg0) {
-        super(arg0);
-        setBackgroundColor(85621);
+    private void init() {
+        mChildHelper = new NestedScrollingChildHelper(this);
+        setNestedScrollingEnabled(true);
     }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        boolean result = false;
+
+        MotionEvent trackedEvent = MotionEvent.obtain(event);
+
+        final int action = MotionEventCompat.getActionMasked(event);
+
+        if (action == MotionEvent.ACTION_DOWN) {
+            mNestedYOffset = 0;
+        }
+
+        int y = (int) event.getY();
+
+        event.offsetLocation(0, mNestedYOffset);
+
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+                mLastMotionY = y;
+                startNestedScroll(ViewCompat.SCROLL_AXIS_VERTICAL);
+                result = super.onTouchEvent(event);
+                break;
+            case MotionEvent.ACTION_MOVE:
+                int deltaY = mLastMotionY - y;
+
+                if (dispatchNestedPreScroll(0, deltaY, mScrollConsumed, mScrollOffset)) {
+                    deltaY -= mScrollConsumed[1];
+                    trackedEvent.offsetLocation(0, mScrollOffset[1]);
+                    mNestedYOffset += mScrollOffset[1];
+                }
+
+                mLastMotionY = y - mScrollOffset[1];
+
+                int oldY = getScrollY();
+                int newScrollY = Math.max(0, oldY + deltaY);
+                int dyConsumed = newScrollY - oldY;
+                int dyUnconsumed = deltaY - dyConsumed;
+
+                if (dispatchNestedScroll(0, dyConsumed, 0, dyUnconsumed, mScrollOffset)) {
+                    mLastMotionY -= mScrollOffset[1];
+                    trackedEvent.offsetLocation(0, mScrollOffset[1]);
+                    mNestedYOffset += mScrollOffset[1];
+                }
+
+                result = super.onTouchEvent(trackedEvent);
+                trackedEvent.recycle();
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN:
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                stopNestedScroll();
+                result = super.onTouchEvent(event);
+                break;
+            default:
+                break;
+        }
+        return result;
+    }
+
+    @Override
+    public void setNestedScrollingEnabled(boolean enabled) {
+        mChildHelper.setNestedScrollingEnabled(enabled);
+    }
+
+    @Override
+    public boolean isNestedScrollingEnabled() {
+        return mChildHelper.isNestedScrollingEnabled();
+    }
+
+    @Override
+    public boolean startNestedScroll(int axes) {
+        return mChildHelper.startNestedScroll(axes);
+    }
+
+    @Override
+    public void stopNestedScroll() {
+        mChildHelper.stopNestedScroll();
+    }
+
+    @Override
+    public boolean hasNestedScrollingParent() {
+        return mChildHelper.hasNestedScrollingParent();
+    }
+
+    @Override
+    public boolean dispatchNestedScroll(int dxConsumed, int dyConsumed, int dxUnconsumed, int dyUnconsumed, int[] offsetInWindow) {
+        return mChildHelper.dispatchNestedScroll(dxConsumed, dyConsumed, dxUnconsumed, dyUnconsumed, offsetInWindow);
+    }
+
+    @Override
+    public boolean dispatchNestedPreScroll(int dx, int dy, int[] consumed, int[] offsetInWindow) {
+        return mChildHelper.dispatchNestedPreScroll(dx, dy, consumed, offsetInWindow);
+    }
+
+    @Override
+    public boolean dispatchNestedFling(float velocityX, float velocityY, boolean consumed) {
+        return mChildHelper.dispatchNestedFling(velocityX, velocityY, consumed);
+    }
+
+    @Override
+    public boolean dispatchNestedPreFling(float velocityX, float velocityY) {
+        return mChildHelper.dispatchNestedPreFling(velocityX, velocityY);
+    }
+
 
 }

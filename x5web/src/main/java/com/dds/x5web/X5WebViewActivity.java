@@ -9,12 +9,15 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
 import android.widget.FrameLayout;
 import android.widget.ProgressBar;
@@ -137,6 +140,9 @@ public class X5WebViewActivity extends AppCompatActivity {
 
     private void init() {
         mWebView = new X5WebView(this, null);
+        CoordinatorLayout.LayoutParams lp = new CoordinatorLayout.LayoutParams(-1, -1);
+        lp.setBehavior(new AppBarLayout.ScrollingViewBehavior());
+        mWebView.setLayoutParams(lp);
         mViewParent.addView(mWebView, new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT));
@@ -151,6 +157,21 @@ public class X5WebViewActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                // 同程旅游国际用车
+                getSupportActionBar().setTitle(view.getTitle());
+                String javascript =
+                        "javascript:function hideTitle() {"
+                                + "var divNav = document.getElementsByClassName('fed-navbar')[0];"
+                                + "divNav.style.display = 'none';"
+                                + "}";
+
+                view.loadUrl(javascript);
+                //加载Java对象 InJavaScriptLocalObj 里的getSource方法，返回标题 "用车"
+                view.loadUrl("javascript:window.java_obj.getSource(" +
+                        "document.getElementsByClassName('fed-navbar-title')[0].innerHTML);");
+
+                // 加载hideTitle方法
+                view.loadUrl("javascript:hideTitle();");
             }
 
             @Override
@@ -291,6 +312,10 @@ public class X5WebViewActivity extends AppCompatActivity {
                 .getPath());
         // webSetting.setPageCacheCapacity(IX5WebSettings.DEFAULT_CACHE_CAPACITY);
         webSetting.setPluginState(WebSettings.PluginState.ON_DEMAND);
+
+        // 将网页中的title隐藏
+        mWebView.addJavascriptInterface(new InJavaScriptLocalObj(), "java_obj");
+
         // webSetting.setRenderPriority(WebSettings.RenderPriority.HIGH);
         // webSetting.setPreFectch(true);
         long time = System.currentTimeMillis();
@@ -371,5 +396,13 @@ public class X5WebViewActivity extends AppCompatActivity {
             super.handleMessage(msg);
         }
     };
+
+    private class InJavaScriptLocalObj {
+        @JavascriptInterface
+        public void getSource(String title) {
+            //拿到返回的"用车"标题
+            getSupportActionBar().setTitle(title);
+        }
+    }
 
 }
